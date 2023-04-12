@@ -24,25 +24,29 @@ usage：
     牛子长度排行 --查看本群正数牛子长度排行
     牛子深度排行 --查看本群负数牛子深度排行
     打胶 --对自己的牛子进行操作，结果随机
+    牛子长度修正 --修正牛子长度与魅魔深度
+    注销牛子 --注销你的牛子，即在long.json中彻底删除此条数据
 """.strip()
 __plugin_des__ = "牛子大作战(误"
 __plugin_type__ = ("群内小游戏",)
-__plugin_cmd__ = ["注册牛子", "jj/JJ/Jj/jJ", "我的牛子", "牛子长度排行","牛子深度排行", "打胶", "牛牛大作战"]
+__plugin_cmd__ = ["注册牛子", "jj/JJ/Jj/jJ", "我的牛子", "牛子长度排行","牛子深度排行", "打胶", "牛牛大作战","牛子长度修正","牛子修正","注销牛子"]
 __plugin_version__ = 0.5
 __plugin_author__ = "molanp"
 __plugin_settings__ = {
-    "level": 5,
+    "level": 6,
     "default_status": True,
-    "limit_superuser": False,
-    "cmd": ['注册牛子', 'jj', 'JJ', 'Jj', 'jJ', '我的牛子', '牛子长度排行','牛子深度排行', '打胶', '牛牛大作战'],
+    "limit_superuser": True,
+    "cmd": ['注册牛子', 'jj', 'JJ', 'Jj', 'jJ', '我的牛子', '牛子长度排行','牛子深度排行', '打胶', '牛牛大作战','牛子长度修正','牛子修正','注销牛子'],
 }
 
 niuzi_register = on_command("注册牛子", priority=5, block=True)
 niuzi_fencing = on_command("jj", aliases={'JJ', 'Jj', 'jJ'}, priority=5, block=True)
 niuzi_my = on_command("我的牛子", priority=5, block=True)
-niuzi_ranking = on_command("牛子长度排行", priority=5, block=True)
-niuzi_ranking_e = on_command("牛子深度排行", priority=5, block=True)
+niuzi_ranking = on_command("牛子长度排行",aliases={'牛子排行'}, priority=5, block=True)
+niuzi_ranking_e = on_command("牛子深度排行",aliases={'魅魔排行'},  priority=5, block=True)
 niuzi_hit_glue = on_command("打胶", priority=5, block=True)
+niuzi_xz = on_command("牛子长度修正",aliases={'牛子修正'}, priority=5, block=True)
+niuzi_unregister = on_command("注销牛子", priority=5, block=True)
 
 group_user_jj = {}
 group_hit_glue = {}
@@ -123,7 +127,10 @@ async def _(event: GroupMessageEvent):
           group_user_jj[group][qq]['time'] = time.time()
           result = fencing(my_long, opponent_long, at, qq, group, content)
         except KeyError:
-          result = "对方还没有牛子呢，你不能和ta击剑！"
+          result = random.choice([
+          "有人还没有注册牛子哦！",
+          "对方还没有牛子呢，你不能和ta击剑！"
+          ])
       else:
         result = "不能和自己击剑哦！"
     else:
@@ -141,8 +148,12 @@ async def _(event: GroupMessageEvent):
   content = readInfo("data/long.json")
   try:
     my_long = content[group][qq]
-    if my_long <= -100:
-      result = f"wtf？你已经进化成魅魔了！当前深度{format(my_long,'.1f')}cm" + image(b64=(await text2image("魅魔\n说明：\n击剑时有20%的几率消耗自身长度吞噬对方牛子", color="#f9f6f2", padding=10)).pic2bs4())
+    l = my_long*random.random()
+    if -1000 <= my_long <= -100:
+      result = f"wtf？你已经进化成魅魔了！当前深度{format(my_long,'.2f')}cm" + image(b64=(await text2image("魅魔\n说明：\n击剑时有20%的几率消耗自身长度吞噬对方牛子", color="#f9f6f2", padding=10)).pic2bs4())
+    elif my_long < -1000:
+      content[group][qq] = my_long-l
+      result = f"厚礼谢！'这...这太深了，这怎么可能！？'\n神们对身为魅魔的你的深度感到震惊,它们决定对你降下神罚！你的深度减少了{format(l,'.2f')}cm,现在深度{format(my_long-l,'.2f')}cm"
     elif -100 < my_long <= -50:
       result = f"嗯....好像已经穿过了身体吧..从另一面来看也可以算是凸出来的吧?当前深度{format(my_long,'.2f')}cm"
     elif -50 < my_long <= -25:
@@ -168,7 +179,7 @@ async def _(event: GroupMessageEvent):
     elif 0 < my_long <= 10:
       result = random.choice([
         f"你行不行啊？细狗！牛子长度才{format(my_long,'.2f')}cm！",
-        f"虽然短，但是小小的也很可爱呢。当前长度{format(my_long,'.2f')}cm",
+        f"虽然短，但是小小的也很可爱呢(笑)。当前长度{format(my_long,'.2f')}cm",
         f"像一只蚕宝宝,当前牛子长度{format(my_long,'.2f')}cm！！！"
       ])
     elif 10 < my_long <= 25:
@@ -189,8 +200,11 @@ async def _(event: GroupMessageEvent):
         f"你马上要进化成牛头人了！当前牛子长度{format(my_long,'.2f')}cm！",
         f"你是什么怪物，不要过来啊！当前牛子长度{format(my_long,'.2f')}cm！"
       ])
-    elif 100 < my_long:
+    elif 100 < my_long <= 1000:
       result = f"惊世骇俗！你已经进化成牛头人了！当前牛子长度{format(my_long,'.2f')}cm！！！" + image(b64=(await text2image("头人\n说明：\n击剑时有20%的几率消耗自身长度吞噬对方牛子", color="#f9f6f2", padding=10)).pic2bs4())
+    elif 1000 < my_long:
+      content[group][qq] = my_long-l
+      result = f"厚礼谢！'这...这突破天际的长度，这怎么可能！？'\n纯爱战神们对身为牛头人的你的长度感到震惊与愤怒,它们决定对你降下神罚！你的长度减少了{format(l,'.2f')}cm,现在长度{format(my_long-l,'.2f')}cm"
   except KeyError:
     result = "你还没有牛子呢！"
   finally:
@@ -311,3 +325,43 @@ async def _(event: GroupMessageEvent):
       ])
   finally:
     await niuzi_hit_glue.finish(Message(result),at_sender=True)
+
+
+@niuzi_xz.handle()
+async def _(event: GroupMessageEvent):
+  content = readInfo("data/long.json")
+  qq = str(event.user_id)
+  group = str(event.group_id)
+  decide = random.random()-0.5
+  try:
+    my_long = content[group][qq]
+    if decide < 0:
+      my_long = -10*random.random() - 0.1
+      result = f"啊，你醒了，恭喜你，你现在是魅魔了哦！\n现在你的深度是{format(my_long,'.2f')}cm"
+    elif decide == 0:
+      my_long= 0
+      result = f"欸，怎么回事吖，你下面怎么是平平的呀？\n现在你的牛子居然是{format(my_long,'.2f')}cm 还可以这样？"
+    else :
+      my_long = 10*random.random() + 0.1
+      result = f"啊，你醒了，手术很成功哦，你现在是男孩子了哦！\n现在你的长度是{format(my_long,'.2f')}cm"
+    content[group][qq] = my_long
+    readInfo('data/long.json',content)
+  except KeyError:
+    result = "你还没有牛子呢！请先注册牛子!"
+  finally:
+    await niuzi_xz.finish(Message(result),at_sender=True)
+
+
+
+@niuzi_unregister.handle()
+async def _(event: GroupMessageEvent):
+  group = str(event.group_id)
+  qq = str(event.user_id)
+  content = readInfo("data/long.json")
+  try:
+    if content[group][qq]:
+      del content[group][qq]
+      readInfo('data/long.json', content)
+      await niuzi_unregister.finish(Message("注销牛子成功"), at_sender=True)
+  except KeyError:
+    await niuzi_unregister.finish(Message("你还没有注册牛子哦！"), at_sender=True)
